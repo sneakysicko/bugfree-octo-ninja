@@ -81,8 +81,18 @@ void lcdRectangle(uint16_t xBegin, uint16_t yBegin, uint16_t xEnd, uint16_t yEnd
 	int i;
 	
 	if(fill == 1) {
+        //do zaimplementowania metoda z autoinkrementacja w ograniczonym obszarze
+        /*
 		for(i = yBegin; i <= yEnd; ++i)
 			lcdLine(xBegin, i, xEnd, i, color);
+            */
+        for(i = yBegin; i <= yEnd; ++i) {
+            lcdSetCursor(xBegin, i);
+            lcdWriteReg(DATA_RAM, color);
+            lcdWriteReg(DATA_RAM, color);
+            lcdWriteReg(DATA_RAM, color);
+            lcdWriteReg(DATA_RAM, color);
+        }
 	}
 	if(fill == 0) {
 		lcdLine(xBegin, yBegin, xEnd, yBegin, color);

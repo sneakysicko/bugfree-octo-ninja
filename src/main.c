@@ -4,6 +4,7 @@
 
 #include"ssd1289_init.h"
 #include"lcdDraw.h"
+#include"snake.h"
 
 #define BUTTON_INT0                    (1 << 0)
 #define BUTTON_KEY1                    (1 << 1)
@@ -17,6 +18,13 @@ typedef struct sPoint {
 } Point;
 
 Point a = {116, 156, 119, 159};
+
+//zmienna przechowujaca wejscie z joysticka
+//pierwsze cztery bity aktualne wejscie
+//kolejne cztery bity to kierunek z ktorego waz przyszedl
+//opis bitow:
+//1 - gora, 2 - prawo, 4 - dol, 8 - lewo
+uint8_t inputControl = 0;
 
 /*
 void DMAConf(void) {
@@ -47,16 +55,33 @@ void Timer1Conf(void) {
 }
 
 void TIMER1_IRQHandler(void) {
+    Element *iter = head;
 	//Inicjucje redraw calego ekranu
+    /*
 	lcdRectangle(a.xb, a.yb, a.xe, a.ye, 1, LCDBlack);
 	a.xb = (a.xb+4)%240;
 	a.xe = (a.xe+4)%240;
 	lcdRectangle(a.xb, a.yb, a.xe, a.ye, 1, LCDWhite);
+    */
+    //presuwamy koniec weza
+    while(iter->next != NULL)
+        iter = iter->next;
+    lcdRectangle(iter->x, iter->y, iter->x+3, iter->y+3, 1, bgCOLOR);
+    while(iter != head) {
+        iter->x = iter->prev->x;
+        iter->y = iter->prev->y;
+        iter = iter->prev;
+    }
+    if(checkCollision() == 1) {
+        //rysuje nowa glowe
+        lcdRectangle(head->x, head->y, head->x+3, head->y+3, 1, fgCOLOR);
+    }
 	
-	LPC_TIM1->IR = 1; //reset przerwania
+	LPC_TIM1->IR = 1; //reset przerwania - musi byc
 }
 
 int main() {
+    srand(time(NULL));
 	Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
@@ -64,7 +89,39 @@ int main() {
 	Timer1Conf();
 	//lcdRectangle(220, 120, 200, 100, 1, LCDWhite);
 	
-	while(1);
+    initSnake();
+	while(1) {
+        inputControl &= (15<<4);
+        switch(Joystick_GetState()) {
+            case JOYSTICK_UP:
+                inputControl |= 1;
+                break;
+            case JOYSTICK_RIGHT:
+                inputControl |= 2;
+                break;
+            case JOYSTICK_DOWN:
+                inputControl |= 4;
+                break;
+            case JOYSTICK_LEFT:
+                inputControl |= 8;
+        }
+        if((inputControl & 15) == (inputControl >> 4)) {
+            inputControl &= (15<<4);
+            switch(inputControl >> 4) {
+                case 1:
+                    inputControl |= 4;
+                    break;
+                case 2:
+                    inputControl |= 8;
+                    break;
+                case 4:
+                    inputControl |= 1;
+                    break;
+                case 8:
+                    inputControl |= 2;
+            }
+        }
+    }
 	
 	return 0;
 }
