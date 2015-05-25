@@ -94,7 +94,7 @@ uint8_t checkCollision(uint8_t input) {
             eatable->next = head;
             head = eatable;
             eatable = NULL;
-            return 1;
+            return 2;
         }
         else {
             current = head->next;

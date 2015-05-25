@@ -58,7 +58,8 @@ void Timer1Conf(void) {
 }
 
 void TIMER1_IRQHandler(void) {
-    Element *iter = head;
+    Element *iter = head, copy = *head;
+    uint8_t result;
 	//Inicjucje redraw calego ekranu
     /*
 	lcdRectangle(a.xb, a.yb, a.xe, a.ye, 1, LCDBlack);
@@ -67,15 +68,18 @@ void TIMER1_IRQHandler(void) {
 	lcdRectangle(a.xb, a.yb, a.xe, a.ye, 1, LCDWhite);
     */
     //presuwamy koniec weza
-    while(iter->next != NULL)
-        iter = iter->next;
-    lcdRectangle(iter->x, iter->y, iter->x+3, iter->y+3, 1, bgCOLOR);
-    while(iter != head) {
-        iter->x = iter->prev->x;
-        iter->y = iter->prev->y;
-        iter = iter->prev;
-    }
-    if(checkCollision() == 1) {
+    result = checkCollision();
+    if(result == 1) {
+        while(iter->next != NULL)
+            iter = iter->next;
+        lcdRectangle(iter->x, iter->y, iter->x+3, iter->y+3, 1, bgCOLOR);
+        while(iter->prev != head) {
+            iter->x = iter->prev->x;
+            iter->y = iter->prev->y;
+            iter = iter->prev;
+        }
+        iter->x = copy.x;
+        iter->y = copy.y;
         //rysuje nowa glowe
         lcdRectangle(head->x, head->y, head->x+3, head->y+3, 1, fgCOLOR);
     }
