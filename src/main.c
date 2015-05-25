@@ -26,6 +26,9 @@ Point a = {116, 156, 119, 159};
 //1 - gora, 2 - prawo, 4 - dol, 8 - lewo
 uint8_t inputControl = 0;
 
+//Zmienna pokazuje, czy trwa gra
+uint8_t game = 0;
+
 /*
 void DMAConf(void) {
 	LPC_SC->PCONP |= 1<<29;
@@ -76,6 +79,8 @@ void TIMER1_IRQHandler(void) {
         //rysuje nowa glowe
         lcdRectangle(head->x, head->y, head->x+3, head->y+3, 1, fgCOLOR);
     }
+    else
+        game = 0;
 	
 	LPC_TIM1->IR = 1; //reset przerwania - musi byc
 }
@@ -90,7 +95,8 @@ int main() {
 	//lcdRectangle(220, 120, 200, 100, 1, LCDWhite);
 	
     initSnake();
-	while(1) {
+    game = 1;
+	while(game == 1) {
         inputControl &= (15<<4);
         switch(Joystick_GetState()) {
             case JOYSTICK_UP:

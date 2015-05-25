@@ -77,6 +77,33 @@ uint8_t checkCollision(uint8_t input) {
             case 8:
                 head->x = (head->x-4+240)%240;
         }
-        return 1;
+        if(head->x == eatable->x && head->y == eatable->y) {
+            switch(input & 15) {
+                case 1:
+                    head->y = (head->y-4+320)%320;
+                    break;
+                case 2:
+                    head->x = (head->x-4+240)%240;
+                    break;
+                case 4:
+                    head->y = (head->y+4)%320;
+                    break;
+                case 8:
+                    head->x = (head->x+4)%240;
+            }
+            eatable->next = head;
+            head = eatable;
+            eatable = NULL;
+            return 1;
+        }
+        else {
+            current = head->next;
+            while((current->x != head->x && current->y != head->y) || current != NULL)
+                current = current->next;
+            if(current == NULL)
+                return 1;
+            else
+                return 0;
+        }
     }
 }
