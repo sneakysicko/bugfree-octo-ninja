@@ -4,6 +4,7 @@
 #include<time.h>
 
 #include"lcdDraw.h"
+#define ELSIZE 8
 
 typedef struct sElement {
     uint16_t x;
@@ -12,11 +13,10 @@ typedef struct sElement {
     struct sElement *prev;
 } Element;
 
-Element *head = NULL;
-Element *eatable = NULL;
-
 void initSnake(void);
 void newEatable(void);
 uint8_t checkCollision(uint8_t input);
+Element* factory(void);
+uint8_t react(uint8_t inputControl);
 
 #endif

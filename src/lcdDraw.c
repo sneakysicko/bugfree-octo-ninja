@@ -78,7 +78,7 @@ void lcdLine(uint16_t xBegin, uint16_t yBegin, uint16_t xEnd, uint16_t yEnd, uin
 }
 
 void lcdRectangle(uint16_t xBegin, uint16_t yBegin, uint16_t xEnd, uint16_t yEnd, int fill, uint16_t color) {
-	int i;
+	int i, j;
 	
 	if(fill == 1) {
         //do zaimplementowania metoda z autoinkrementacja w ograniczonym obszarze
@@ -88,9 +88,7 @@ void lcdRectangle(uint16_t xBegin, uint16_t yBegin, uint16_t xEnd, uint16_t yEnd
             */
         for(i = yBegin; i <= yEnd; ++i) {
             lcdSetCursor(xBegin, i);
-            lcdWriteReg(DATA_RAM, color);
-            lcdWriteReg(DATA_RAM, color);
-            lcdWriteReg(DATA_RAM, color);
+					for(j = 0; j <= (xEnd - xBegin); ++j)
             lcdWriteReg(DATA_RAM, color);
         }
 	}
@@ -112,9 +110,9 @@ void lcdCharacter(uint16_t xBegin, uint16_t yBegin, const unsigned char characte
 		for(j = 0; j < 8; ++j) {
 			bit = buffer[i] & mask;
 			if(bit)
-				lcdPoint(xBegin + j, yBegin - i, LCDBlack);
-			else
 				lcdPoint(xBegin + j, yBegin - i, LCDWhite);
+			else
+				lcdPoint(xBegin + j, yBegin - i, LCDBlack);
 			mask <<= 1;
 		}
 	}

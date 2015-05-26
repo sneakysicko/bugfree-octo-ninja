@@ -10,7 +10,13 @@
 #define BUTTON_KEY1                    (1 << 1)
 #define BUTTON_KEY2                    (1 << 2)
 
-typedef struct sPoint {
+extern Element *head;
+extern Element *eatable;
+extern Element *magazyn;
+
+uint8_t reactCount = 0;
+
+/*typedef struct sPoint {
 	uint16_t xb;
 	uint16_t yb;
 	uint16_t xe;
@@ -18,13 +24,14 @@ typedef struct sPoint {
 } Point;
 
 Point a = {116, 156, 119, 159};
-
+*/
 //zmienna przechowujaca wejscie z joysticka
 //pierwsze cztery bity aktualne wejscie
 //kolejne cztery bity to kierunek z ktorego waz przyszedl
 //opis bitow:
 //1 - gora, 2 - prawo, 4 - dol, 8 - lewo
 uint8_t inputControl = 0;
+uint8_t oldControl = 8;
 
 //Zmienna pokazuje, czy trwa gra
 uint8_t game = 0;
@@ -52,45 +59,20 @@ SystemCoreClock/4 == 1s ??
 void Timer1Conf(void) {
 	LPC_TIM1->PR = 0; //Dzielnik PCLK zanim idzie do Time Countera, 0 oznacza ze na kazde PCLK Timer Counter zwieksza sie o jeden
 	LPC_TIM1->MCR = 3; //Wlacza przerwanie progu 0 oraz reset TC przy osiagnieciu progu
-	LPC_TIM1->MR0 = SystemCoreClock/16; //Wartosc progu, co ile bedziemy osiagac przerwanie
+	LPC_TIM1->MR0 = SystemCoreClock/4; //Wartosc progu, co ile bedziemy osiagac przerwanie
 	LPC_TIM1->TCR = 1; //wlacza timer
 	NVIC_EnableIRQ(TIMER1_IRQn); //Wlacza przerwanie
 }
 
 void TIMER1_IRQHandler(void) {
-    Element *iter = head, copy = *head;
-    uint8_t result;
-	//Inicjucje redraw calego ekranu
-    /*
-	lcdRectangle(a.xb, a.yb, a.xe, a.ye, 1, LCDBlack);
-	a.xb = (a.xb+4)%240;
-	a.xe = (a.xe+4)%240;
-	lcdRectangle(a.xb, a.yb, a.xe, a.ye, 1, LCDWhite);
-    */
-    //presuwamy koniec weza
-    result = checkCollision();
-    if(result == 1) {
-        while(iter->next != NULL)
-            iter = iter->next;
-        lcdRectangle(iter->x, iter->y, iter->x+3, iter->y+3, 1, bgCOLOR);
-        while(iter->prev != head) {
-            iter->x = iter->prev->x;
-            iter->y = iter->prev->y;
-            iter = iter->prev;
-        }
-        iter->x = copy.x;
-        iter->y = copy.y;
-        //rysuje nowa glowe
-        lcdRectangle(head->x, head->y, head->x+3, head->y+3, 1, fgCOLOR);
-    }
-    else
-        game = 0;
+	++reactCount;
 	
 	LPC_TIM1->IR = 1; //reset przerwania - musi byc
 }
 
 int main() {
-    srand(time(NULL));
+	magazyn = malloc(sizeof(Element)*1200);
+    //srand(time(NULL));
 	Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
@@ -101,37 +83,31 @@ int main() {
     initSnake();
     game = 1;
 	while(game == 1) {
-        inputControl &= (15<<4);
+        inputControl = 0;
         switch(Joystick_GetState()) {
             case JOYSTICK_UP:
-                inputControl |= 1;
-                break;
-            case JOYSTICK_RIGHT:
-                inputControl |= 2;
-                break;
-            case JOYSTICK_DOWN:
-                inputControl |= 4;
+                inputControl = 1;
                 break;
             case JOYSTICK_LEFT:
-                inputControl |= 8;
+                inputControl = 2;
+                break;
+            case JOYSTICK_DOWN:
+                inputControl = 4;
+                break;
+            case JOYSTICK_RIGHT:
+                inputControl = 8;
+								break;
+						default:
+							inputControl = oldControl;
         }
-        if((inputControl & 15) == (inputControl >> 4)) {
-            inputControl &= (15<<4);
-            switch(inputControl >> 4) {
-                case 1:
-                    inputControl |= 4;
-                    break;
-                case 2:
-                    inputControl |= 8;
-                    break;
-                case 4:
-                    inputControl |= 1;
-                    break;
-                case 8:
-                    inputControl |= 2;
-            }
-        }
+				
+				if(reactCount > 0) {
+					game = react(inputControl);
+					--reactCount;
+				}
     }
+	lcdString(50, 50, "Koniec gry");
+		while(1);
 	
 	return 0;
 }
