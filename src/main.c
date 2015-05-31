@@ -32,6 +32,8 @@ Point a = {116, 156, 119, 159};
 //1 - gora, 2 - prawo, 4 - dol, 8 - lewo
 uint8_t inputControl = 0;
 uint8_t oldControl = 8;
+//gdzie isc niemozna
+uint8_t forbidden = 2;
 
 //Zmienna pokazuje, czy trwa gra
 uint8_t game = 0;
@@ -71,7 +73,7 @@ void TIMER1_IRQHandler(void) {
 }
 
 int main() {
-    uint32_t tmp = (1<<31)-1;
+    uint32_t tmp = (1<<31)-1;//tymczasowe
 	magazyn = malloc(sizeof(Element)*1200);
     Timer3Conf();
 	Joystick_Initialize();
@@ -107,6 +109,9 @@ int main() {
 			default:
 				inputControl = oldControl;
         }
+
+        if(inputControl == forbidden)
+            inputControl = oldControl;
 				
 		if(reactCount > 0) {
 			game = react(inputControl);
@@ -114,7 +119,7 @@ int main() {
 		}
     }
 	lcdString(50, 50, "Koniec gry");
-		while(1);
+	while(1);
 	
 	return 0;
 }

@@ -4,6 +4,8 @@
 Element *head = NULL;
 Element *eatable = NULL;
 Element *magazyn = NULL;
+extern uint8_t oldControl;
+extern uint8_t forbidden;
 
 Element* factory() {
 	static int returned = 0;
@@ -143,7 +145,22 @@ uint8_t react(uint8_t inputControl) {
         iter->y = copy.y;
         //rysuje nowa glowe
         lcdRectangle(head->x, head->y, head->x+ELSIZE-1, head->y+ELSIZE-1, 1, fgCOLOR);
-				return 1;
+        oldControl = inputControl;
+        switch(oldControl) {
+            case 1:
+                forbidden = 4;
+                break;
+            case 2:
+                forbidden = 8;
+                break;
+            case 4:
+                forbidden = 1;
+                break;
+            case 8:
+                forbidden = 2;
+                break;
+        }
+		return 1;
     }
     else
         return 0;
