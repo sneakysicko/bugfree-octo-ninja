@@ -4,6 +4,7 @@
 #include<time.h>
 
 #include"lcdDraw.h"
+#include"random.h"
 #define ELSIZE 8
 
 typedef struct sElement {

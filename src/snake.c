@@ -14,8 +14,8 @@ void initSnake() {
     Element *iter;
     head = factory();
     if(head != NULL) {
-        head->x = 116;
-        head->y = 156;
+        head->x = 15*8;
+        head->y = 20*8;
         head->prev = NULL;
         head->next = factory();
         if(head->next != NULL) {
@@ -47,8 +47,8 @@ void newEatable() {
     while(eatable == NULL || eatable->next != (Element*)0xEA) {
         if(eatable == NULL)
             eatable = factory();
-        eatable->x = 0;//rand()%240;
-        eatable->y = 0;//rand()%320;
+        eatable->x = (random()%30)*8;//rand()%240;
+        eatable->y = (random()%40)*8;//rand()%320;
         eatable->next = (Element*)0xEE;
         eatable->prev = NULL;
         if(checkCollision(0) == 1)

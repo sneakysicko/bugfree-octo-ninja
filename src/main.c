@@ -71,14 +71,21 @@ void TIMER1_IRQHandler(void) {
 }
 
 int main() {
+    uint32_t tmp = (1<<31)-1;
 	magazyn = malloc(sizeof(Element)*1200);
-    //srand(time(NULL));
+    Timer3Conf();
 	Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
 	lcdClean();
+
+    //Tu jakies menu
+    //Tymczasowa petla opozniajaca
+    while(tmp--);
+
+    Timer3Disable();
+
 	Timer1Conf();
-	//lcdRectangle(220, 120, 200, 100, 1, LCDWhite);
 	
     initSnake();
     game = 1;
@@ -96,15 +103,15 @@ int main() {
                 break;
             case JOYSTICK_RIGHT:
                 inputControl = 8;
-								break;
-						default:
-							inputControl = oldControl;
+				break;
+			default:
+				inputControl = oldControl;
         }
 				
-				if(reactCount > 0) {
-					game = react(inputControl);
-					--reactCount;
-				}
+		if(reactCount > 0) {
+			game = react(inputControl);
+			--reactCount;
+		}
     }
 	lcdString(50, 50, "Koniec gry");
 		while(1);
