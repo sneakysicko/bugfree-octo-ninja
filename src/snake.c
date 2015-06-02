@@ -76,7 +76,7 @@ uint8_t checkCollision(uint8_t input) {
         //sprawdzamy wunsza, do implementacji
         //jesli wunsz zjadl eatable to eatable jest nowa glowa
         //jesli wunsz nie zjadl eatable i nie wszedl w nic to zmienia wspolrzedne wunsza
-        switch(input & 15) {
+        switch(input) {
             case 1:
                 head->y = (head->y+ELSIZE)%320;
                 break;
@@ -90,7 +90,7 @@ uint8_t checkCollision(uint8_t input) {
                 head->x = (head->x-ELSIZE+240)%240;
         }
         if(head->x == eatable->x && head->y == eatable->y) {
-            switch(input & 15) {
+            switch(input) {
                 case 1:
                     head->y = (head->y-ELSIZE+320)%320;
                     break;
@@ -104,6 +104,7 @@ uint8_t checkCollision(uint8_t input) {
                     head->x = (head->x+ELSIZE)%240;
             }
             eatable->next = head;
+						head->prev = eatable;
             head = eatable;
             eatable = NULL;
             return 2;
@@ -132,7 +133,10 @@ uint8_t react(uint8_t inputControl) {
     */
     //presuwamy koniec weza
     result = checkCollision(inputControl);
-    if(result == 1) {
+	if(eatable == NULL)
+		newEatable();
+    if(result == 1 || result == 2) {
+			if(result == 1) {
         while(iter->next != NULL)
             iter = iter->next;
         lcdRectangle(iter->x, iter->y, iter->x+ELSIZE-1, iter->y+ELSIZE-1, 1, bgCOLOR);
@@ -145,6 +149,7 @@ uint8_t react(uint8_t inputControl) {
         iter->y = copy.y;
         //rysuje nowa glowe
         lcdRectangle(head->x, head->y, head->x+ELSIZE-1, head->y+ELSIZE-1, 1, fgCOLOR);
+			}
         oldControl = inputControl;
         switch(oldControl) {
             case 1:

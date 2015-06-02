@@ -5,6 +5,9 @@
 #include"ssd1289_init.h"
 #include"lcdDraw.h"
 #include"snake.h"
+//#include"uart.h"
+
+#include<stdio.h>
 
 #define BUTTON_INT0                    (1 << 0)
 #define BUTTON_KEY1                    (1 << 1)
@@ -16,15 +19,24 @@ extern Element *magazyn;
 
 uint8_t reactCount = 0;
 
-/*typedef struct sPoint {
-	uint16_t xb;
-	uint16_t yb;
-	uint16_t xe;
-	uint16_t ye;
-} Point;
+unsigned int seed = 1;
+const unsigned int m = (1<<15)-1;
+unsigned int out = 0;
+void randomInit() {
+	out = seed%m;
+}
 
-Point a = {116, 156, 119, 159};
-*/
+int random() {
+    const unsigned int a = 48271/2;
+    static int n = 0;
+
+
+    out = (a*out)%m;
+    ++n;
+
+    return out;
+}
+
 //zmienna przechowujaca wejscie z joysticka
 //pierwsze cztery bity aktualne wejscie
 //kolejne cztery bity to kierunek z ktorego waz przyszedl
@@ -66,34 +78,98 @@ void Timer1Conf(void) {
 	NVIC_EnableIRQ(TIMER1_IRQn); //Wlacza przerwanie
 }
 
+void Timer0Conf() {
+	//LPC_SC->PCONP |= 1<<22;
+    LPC_TIM0->PR = 0;
+    LPC_TIM0->MCR = 3;
+    LPC_TIM0->MR0 = SystemCoreClock/16;
+    LPC_TIM0->TCR = 1;
+    NVIC_EnableIRQ(TIMER0_IRQn);
+}
+
+void TIMER0_IRQHandler(void) {
+    seed = (seed+1);
+
+    LPC_TIM0->IR = 1;
+}
+
+
 void TIMER1_IRQHandler(void) {
 	++reactCount;
 	
 	LPC_TIM1->IR = 1; //reset przerwania - musi byc
 }
 
+void Timer0Disable() {
+	NVIC_DisableIRQ(TIMER0_IRQn);
+    LPC_TIM0->MCR = 0;
+    LPC_TIM0->TCR = 0;
+}
+
+uint32_t tickCounter = 0; //co 10ms
+
+void SysTick_Handler(void) {
+	++tickCounter;
+}
+//to mozna przezucic do lcdDraw.c/h
+void lcdMenu()
+{
+  lcdString(100, 300, "MENU");
+  lcdString(150, 250, "1. INT0 - New Game");
+  lcdString(100, 250, "2. Cos tam");
+
+}
+
 int main() {
-    uint32_t tmp = (1<<31)-1;//tymczasowe
+    uint8_t menu = 1;
+	
+	//UART0Conf();
+	SysTick_Config(SystemCoreClock/100);
+	//printf("Hwello\n");
 	magazyn = malloc(sizeof(Element)*1200);
-    Timer3Conf();
-	Joystick_Initialize();
+		Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
+    Timer0Conf();
+
 	lcdClean();
 
     //Tu jakies menu
     //Tymczasowa petla opozniajaca
-    while(tmp--);
+			//printf("%d\n", seed);
 
-    Timer3Disable();
 
 	Timer1Conf();
+	lcdMenu();
+    while(menu == 1)
+    {
+		while(tickCounter<10);
+		tickCounter=0;
+		switch(Buttons_GetState())
+		{
+			case BUTTON_INT0:
+    game = 1;
+    menu = 0;
+	break;
+			case BUTTON_KEY1:
+				lcdString(250, 150, "Opcja 2");
+                menu = 0;
+			break;
+			case BUTTON_KEY2:
+			    lcdString(250, 150, "Opcja 3");
+                menu = 0;
+			break;
+		}
+
+	}
+    Timer0Disable();
+	randomInit();
 	
     initSnake();
-    game = 1;
 	while(game == 1) {
-        inputControl = 0;
-        switch(Joystick_GetState()) {
+        inputControl = Joystick_GetState();
+
+        switch(inputControl) {
             case JOYSTICK_UP:
                 inputControl = 1;
                 break;
@@ -117,9 +193,9 @@ int main() {
 			game = react(inputControl);
 			--reactCount;
 		}
-    }
-	lcdString(50, 50, "Koniec gry");
+  }
+	lcdString(200, 240, "Koniec gry");
 	while(1);
-	
+
 	return 0;
 }
