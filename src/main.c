@@ -17,7 +17,14 @@ extern Element *head;
 extern Element *eatable;
 extern Element *magazyn;
 
+//zmienen do opcji szybkosci
+int snakeSpeed = 0;
+const int snakeSpeedArray[4] = {4,8,16,32};
+const int snakeSpeedArraySize = 4;
+const char levelSpeedChar = '0';
+
 uint8_t reactCount = 0;
+uint8_t menu = 1;// przenioslem ta zmienan tutaj
 
 unsigned int seed = 1;
 const unsigned int m = (1<<15)-1;
@@ -27,13 +34,11 @@ void randomInit() {
 }
 
 int random() {
-    const unsigned int a = 48271/2;
+    const unsigned int a = 48271;
     static int n = 0;
-
-
+    
     out = (a*out)%m;
     ++n;
-
     return out;
 }
 
@@ -73,13 +78,13 @@ SystemCoreClock/4 == 1s ??
 void Timer1Conf(void) {
 	LPC_TIM1->PR = 0; //Dzielnik PCLK zanim idzie do Time Countera, 0 oznacza ze na kazde PCLK Timer Counter zwieksza sie o jeden
 	LPC_TIM1->MCR = 3; //Wlacza przerwanie progu 0 oraz reset TC przy osiagnieciu progu
-	LPC_TIM1->MR0 = SystemCoreClock/4; //Wartosc progu, co ile bedziemy osiagac przerwanie
+	LPC_TIM1->MR0 = SystemCoreClock/(snakeSpeedArray[snakeSpeed]); //Wartosc progu, co ile bedziemy osiagac przerwanie
 	LPC_TIM1->TCR = 1; //wlacza timer
 	NVIC_EnableIRQ(TIMER1_IRQn); //Wlacza przerwanie
 }
 
 void Timer0Conf() {
-	//LPC_SC->PCONP |= 1<<22;
+    //LPC_SC->PCONP |= 1<<22;
     LPC_TIM0->PR = 0;
     LPC_TIM0->MCR = 3;
     LPC_TIM0->MR0 = SystemCoreClock/16;
@@ -101,7 +106,7 @@ void TIMER1_IRQHandler(void) {
 }
 
 void Timer0Disable() {
-	NVIC_DisableIRQ(TIMER0_IRQn);
+    NVIC_DisableIRQ(TIMER0_IRQn);
     LPC_TIM0->MCR = 0;
     LPC_TIM0->TCR = 0;
 }
@@ -110,61 +115,139 @@ uint32_t tickCounter = 0; //co 10ms
 
 void SysTick_Handler(void) {
 	++tickCounter;
+	//++seed;
 }
 //to mozna przezucic do lcdDraw.c/h
 void lcdMenu()
 {
-  lcdString(100, 300, "MENU");
-  lcdString(150, 250, "1. INT0 - New Game");
-  lcdString(100, 250, "2. Cos tam");
+	lcdString(200, 300, "MENU");
+	lcdString(150, 250, "1. INT0 - Nowa Gra");
+	lcdString(150, 200, "2. KEY1 - Opcje");
+	lcdString(150, 150, "3. KEY2 - Wyjscie");
+}
 
+void lcdOptionLevelSpeed(const char levelSpeed)
+{
+	// wzialem to z lcdDraw aby przy opcjach gdy zmieniamy +/- szybksoc nie przerysowywac calego ekranu
+	// tylko sam poziom
+	int i,j;
+	for( i  = 0 ; i < 16 ; ++i)
+		for ( j = 0; j < 8 ; ++j)
+		{
+			lcdSetCursor(120 + j , 250 - i );
+			lcdWriteReg(DATA_RAM, LCDBlack);
+		}
+	lcdCharacter(120,250,levelSpeed);
+}
+void lcdOptions(const char levelSpeed)
+{
+	lcdString(150, 300, "POZIOM SZYBKOSCI");
+    lcdCharacter(120,250,levelSpeed);
+    lcdString(150,210,"KEY1 +");
+    lcdString(150,170,"KEY2 -");
+    lcdString(150,140,"INT0 Start");
+}
+
+void game()
+{
+	Timer1Conf();
+	Timer0Disable();
+	randomInit();
+	initSnake();
+	while(game == 1) 
+	{
+        inputControl = Joystick_GetState();
+
+        switch(inputControl) {
+            case JOYSTICK_UP:
+                inputControl = 1;
+                break;
+            case JOYSTICK_LEFT:
+                inputControl = 2;
+                break;
+            case JOYSTICK_DOWN:
+                inputControl = 4;
+                break;
+            case JOYSTICK_RIGHT:
+                inputControl = 8;
+				break;
+			default:
+				inputControl = oldControl;
+        }
+
+        if(inputControl == forbidden)
+            inputControl = oldControl;
+				
+		if(reactCount > 0) {
+			game = react(inputControl);
+			--reactCount;
+		}
+  }
+  lcdString(200, 240, "Koniec gry");
+  while(1);
 }
 
 int main() {
-    uint8_t menu = 1;
-	
+    //uint8_t menu = 1;  zrobilem jako globalna 
 	//UART0Conf();
 	SysTick_Config(SystemCoreClock/100);
 	//printf("Hwello\n");
 	magazyn = malloc(sizeof(Element)*1200);
-		Joystick_Initialize();
+	Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
     Timer0Conf();
 
 	lcdClean();
-
-    //Tu jakies menu
-    //Tymczasowa petla opozniajaca
-			//printf("%d\n", seed);
-
-
-	Timer1Conf();
 	lcdMenu();
-    while(menu == 1)
+	
+	//Timer1Conf(); wrzucilem go do game()
+    while(1)
     {
-		while(tickCounter<10);
-		tickCounter=0;
 		switch(Buttons_GetState())
 		{
 			case BUTTON_INT0:
-    game = 1;
-    menu = 0;
-	break;
+				lcdClean();	
+				game();		
+				break;
 			case BUTTON_KEY1:
-				lcdString(250, 150, "Opcja 2");
-                menu = 0;
-			break;
+				lcdClean();
+				lcdOptions(levelSpeedChar);
+				while(1)
+				{
+					switch(Buttons_GetState())
+        			{
+        				case BUTTON_INT0:
+        					lcdClean();
+        					game();
+        					break;
+        				case BUTTON_KEY1:
+        					++snakeSpeed;
+            				snakeSpeed %= snakeSpeedArraySize;
+            				lcdOptionLevelSpeed(levelSpeedChar + snakeSpeed);
+        					break;
+        				case BUTTON_KEY2:
+        					--snakeSpeed;
+            				if(snakeSpeed < 0)snakeSpeed = snakeSpeedArraySize - 1;
+            				snakeSpeed %= snakeSpeedArraySize;
+            				lcdOptionLevelSpeed(levelSpeedChar + snakeSpeed);
+        					break;
+        			}
+				}
+				break;
 			case BUTTON_KEY2:
-			    lcdString(250, 150, "Opcja 3");
-                menu = 0;
-			break;
+				lcdClean();
+			    lcdString(150, 250, "Zakonczenie gry");
+                while(1);
+				break;
 		}
 
 	}
+	//calosciowo to przerzucilem do game()
+	
+	/*
     Timer0Disable();
 	randomInit();
-	
     initSnake();
 	while(game == 1) {
         inputControl = Joystick_GetState();
@@ -195,7 +278,8 @@ int main() {
 		}
   }
 	lcdString(200, 240, "Koniec gry");
-	while(1);
+	while(1);*/ 
+	
 
 	return 0;
 }
