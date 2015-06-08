@@ -25,10 +25,12 @@ const char levelSpeedChar = '0';
 
 uint8_t reactCount = 0;
 uint8_t menu = 1;// przenioslem ta zmienan tutaj
+uint8_t options = 0;
 
 unsigned int seed = 1;
 const unsigned int m = (1<<15)-1;
 unsigned int out = 0;
+
 void randomInit() {
 	out = seed%m;
 }
@@ -111,11 +113,8 @@ void Timer0Disable() {
     LPC_TIM0->TCR = 0;
 }
 
-uint32_t tickCounter = 0; //co 10ms
-
 void SysTick_Handler(void) {
-	++tickCounter;
-	//++seed;
+	++seed;
 }
 //to mozna przezucic do lcdDraw.c/h
 void lcdMenu()
@@ -151,7 +150,8 @@ void lcdOptions(const char levelSpeed)
 void game()
 {
 	Timer1Conf();
-	Timer0Disable();
+	//Timer0Disable();
+    SysTick_Config(0); //Wylacza systicka?
 	randomInit();
 	initSnake();
 	while(game == 1) 
@@ -190,35 +190,43 @@ void game()
 int main() {
     //uint8_t menu = 1;  zrobilem jako globalna 
 	//UART0Conf();
-	SysTick_Config(SystemCoreClock/100);
+	SysTick_Config(SystemCoreClock/100); //Ticki co 10ms
 	//printf("Hwello\n");
 	magazyn = malloc(sizeof(Element)*1200);
 	Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
-    Timer0Conf();
+    //Timer0Conf(); //Seed gen via timer0
 
 	lcdClean();
 	lcdMenu();
 	
 	//Timer1Conf(); wrzucilem go do game()
-    while(1)
+    while(menu == 1) //
     {
+        if(seed > m)
+            seed = 1;
 		switch(Buttons_GetState())
 		{
 			case BUTTON_INT0:
 				lcdClean();	
+                menu = 0;
 				game();		
 				break;
 			case BUTTON_KEY1:
 				lcdClean();
 				lcdOptions(levelSpeedChar);
-				while(1)
+                options = 1;
+                menu = 0;
+				while(options == 1)
 				{
+                    if(seed > m)
+                        seed = 1;
 					switch(Buttons_GetState())
         			{
         				case BUTTON_INT0:
         					lcdClean();
+                            options = 0;
         					game();
         					break;
         				case BUTTON_KEY1:
@@ -234,6 +242,7 @@ int main() {
         					break;
         			}
 				}
+                menu = 1;
 				break;
 			case BUTTON_KEY2:
 				lcdClean();
