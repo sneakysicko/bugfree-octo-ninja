@@ -6,7 +6,7 @@
 #include"ssd1289_init.h"
 #include"lcdDraw.h"
 #include"snake.h"
-#include"sound1.h"
+#include"simple.h"
 
 #include<stdio.h>
 
@@ -66,6 +66,7 @@ void DACConf(void) {
 void DMAConf(void) {
 	LPC_SC->PCONP |= 1<<29; //uruchomienie peryferium DMA
 	LPC_GPDMA->DMACConfig = 1; //Uruchomienie DMA
+	LPC_SC->DMAREQSEL = 1; //DMA aktywowane dla M0 Timer0
 	LPC_GPDMA->DMACIntTCClear = 1; //Czyszczenie interruptow
 	LPC_GPDMA->DMACIntErrClr = 1; //czyszczenie errorow
 }
@@ -74,21 +75,23 @@ void DMA0ChannelConf(void) {
 	LPC_GPDMACH0->DMACCSrcAddr = (uint32_t)&sound; // tu zrodlo dzwieku
 	LPC_GPDMACH0->DMACCDestAddr = (uint32_t)&LPC_DAC->DACR; //DAC
 	LPC_GPDMACH0->DMACCLLI = 0; //(uint32_t)(&head); //Linked List transfer
-	LPC_GPDMACH0->DMACCControl = (uint32_t)(sizeof(sound)/sizeof(int) | (1<<26));// | 4<<12 | 3<<15); //| (uint32_t)(1UL<<31);
+	LPC_GPDMACH0->DMACCControl = (uint32_t)(10000 | (1<<26) | 1<<18 | 1 << 21);
 	LPC_GPDMACH0->DMACCConfig = (uint32_t)(1 + (1<<11) + (7<<6)) | (uint32_t)(1<<15);
 }
 
 void Play(void) {
 	static int count = 0;
 	LPC_DAC->DACR = sound[count++];
-	if(count > 7214)
+	if(count >= 10000) {
 		NVIC_DisableIRQ(TIMER0_IRQn);
+		count = 0;
+	}
 }
 
 void Timer0Conf(void) {
 	LPC_TIM0->PR = 0;
 	LPC_TIM0->MCR = 3;
-	LPC_TIM0->MR0 = SystemCoreClock/567;
+	LPC_TIM0->MR0 = 567;
 	LPC_TIM0->TCR = 1;
 	NVIC_EnableIRQ(TIMER0_IRQn);
 }
@@ -184,9 +187,10 @@ int main() {
 	Joystick_Initialize();
 	Buttons_Initialize();
 	initDisplay();
+	foo();
 	DACConf();
-	//DMAConf();
 	Timer0Conf();
+	//DMAConf();
 	//DMA0ChannelConf();
 
 	lcdClean();

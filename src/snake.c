@@ -1,6 +1,9 @@
 #include "snake.h"
 //#include "dotArray.h"
 
+void DMA0ChannelConf(void);
+void Timer0Conf();
+
 Element *head = NULL;
 Element *eatable = NULL;
 Element *magazyn = NULL;
@@ -16,8 +19,8 @@ void initSnake() {
     Element *iter;
     head = factory();
     if(head != NULL) {
-        head->x = 15*8;
-        head->y = 20*8;
+        head->x = 7*16;
+        head->y = 10*16;
         head->prev = NULL;
         head->next = factory();
         if(head->next != NULL) {
@@ -49,8 +52,8 @@ void newEatable() {
     while(eatable == NULL || eatable->next != (Element*)0xEA) {
         if(eatable == NULL)
             eatable = factory();
-        eatable->x = (random()%30)*8;//rand()%240;
-        eatable->y = (random()%40)*8;//rand()%320;
+        eatable->x = (random()%15)*16;//rand()%240;
+        eatable->y = (random()%20)*16;//rand()%320;
         eatable->next = (Element*)0xEE;
         eatable->prev = NULL;
         if(checkCollision(0) == 1)
@@ -107,6 +110,8 @@ uint8_t checkCollision(uint8_t input) {
 						head->prev = eatable;
             head = eatable;
             eatable = NULL;
+						//DMA0ChannelConf();
+						Timer0Conf();
             return 2;
         }
         else {
