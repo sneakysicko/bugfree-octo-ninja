@@ -19,5 +19,8 @@ void newEatable(void);
 uint8_t checkCollision(uint8_t input);
 Element* factory(void);
 uint8_t react(uint8_t inputControl);
+void drawSnake(void);
+void reset(void);
+void drawEatable(void);
 
 #endif

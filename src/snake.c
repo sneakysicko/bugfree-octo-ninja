@@ -2,21 +2,24 @@
 //#include "dotArray.h"
 
 void DMA0ChannelConf(void);
-void Timer0Conf();
+void Timer0Conf(void);
 
 Element *head = NULL;
 Element *eatable = NULL;
 Element *magazyn = NULL;
 extern uint8_t oldControl;
 extern uint8_t forbidden;
+int returned = 0;
+
+void reset() {
+	returned = 0;
+}
 
 Element* factory() {
-	static int returned = 0;
 	return &(magazyn[returned++]);
 }
 
 void initSnake() {
-    Element *iter;
     head = factory();
     if(head != NULL) {
         head->x = 7*16;
@@ -39,11 +42,17 @@ void initSnake() {
     else {
         //Jakas wiadomosc na lcd?
     }
-
-    for(iter = head; iter != NULL; iter = iter->next)
-        lcdRectangle(iter->x, iter->y, iter->x+ELSIZE-1, iter->y+ELSIZE-1, 1, fgCOLOR);
-
     newEatable();
+}
+
+void drawSnake() {
+	Element *iter;
+	for(iter = head; iter != NULL; iter = iter->next)
+    lcdRectangle(iter->x, iter->y, iter->x+ELSIZE-1, iter->y+ELSIZE-1, 1, fgCOLOR);
+}
+
+void drawEatable() {
+	lcdRectangle(eatable->x, eatable->y, eatable->x+ELSIZE-1, eatable->y+ELSIZE-1, 1, fgCOLOR);
 }
 
 //generujemy nowy jadalny element, element jest poprawny jesli jego next
@@ -59,7 +68,7 @@ void newEatable() {
         if(checkCollision(0) == 1)
             eatable->next = (Element*)0xEA;
     }
-    lcdRectangle(eatable->x, eatable->y, eatable->x+ELSIZE-1, eatable->y+ELSIZE-1, 1, fgCOLOR);
+		drawEatable();
 }
 
 //1 oznacza brak confilktow, 0 oznacza konflikt
@@ -110,8 +119,8 @@ uint8_t checkCollision(uint8_t input) {
 						head->prev = eatable;
             head = eatable;
             eatable = NULL;
-						//DMA0ChannelConf();
-						Timer0Conf();
+						DMA0ChannelConf();
+						//Timer0Conf();
             return 2;
         }
         else {
@@ -173,5 +182,5 @@ uint8_t react(uint8_t inputControl) {
 		return 1;
     }
     else
-        return 0;
+      return 0;
 }
