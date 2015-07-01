@@ -32,6 +32,7 @@ uint8_t game = 0;
 
 unsigned int seed = 1;
 const unsigned int m = (1<<15)-1;
+//Liczba zwracana przez generator liczb losowych
 unsigned int out = 0;
 uint8_t initialized = 0;
 
@@ -81,32 +82,6 @@ void DMA0ChannelConf(void) {
 	LPC_GPDMACH0->DMACCConfig = (uint32_t)(1  | (7<<6) | (1<<11) | (1<<15));
 }
 
-void Play(void) {
-	static int count = 0;
-	LPC_DAC->DACR = sound[count++];// & ((1<<11)-1)<<6;
-	if(count >= 10000) {
-		NVIC_DisableIRQ(TIMER0_IRQn);
-		count = 0;
-	}
-}
-/*
-void Timer0Conf(void) {
-	LPC_TIM0->PR = 0;
-	LPC_TIM0->MCR = 3;
-	LPC_TIM0->MR0 = 567;
-	LPC_TIM0->TCR = 1;
-	NVIC_EnableIRQ(TIMER0_IRQn);
-}
-
-void TIMER0_IRQHandler(void) {
-	Play();
-	
-	LPC_TIM0->IR = 1;
-}
-*/
-/*
-SystemCoreClock/4 == 1s ??
-*/
 void Timer1Disable(void) {
 	NVIC_DisableIRQ(TIMER1_IRQn);
 	LPC_TIM1->TCR = 0;
@@ -224,10 +199,6 @@ void menuF() {
 		switch(Buttons_GetState())
 		{
 			case BUTTON_KEY1:
-				if(game == 0) {
-					snakeSpeed = 1;
-					reset();
-				}
 				lcdClean();
 				menu = 0;
 				break;

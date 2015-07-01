@@ -11,10 +11,6 @@ extern uint8_t oldControl;
 extern uint8_t forbidden;
 int returned = 0;
 
-void reset() {
-	returned = 0;
-}
-
 Element* factory() {
 	return &(magazyn[returned++]);
 }
@@ -150,20 +146,20 @@ uint8_t react(uint8_t inputControl) {
 	if(eatable == NULL)
 		newEatable();
     if(result == 1 || result == 2) {
-			if(result == 1) {
-        while(iter->next != NULL)
-            iter = iter->next;
-        lcdRectangle(iter->x, iter->y, iter->x+ELSIZE-1, iter->y+ELSIZE-1, 1, bgCOLOR);
-        while(iter->prev != head) {
-            iter->x = iter->prev->x;
-            iter->y = iter->prev->y;
-            iter = iter->prev;
-        }
-        iter->x = copy.x;
-        iter->y = copy.y;
-        //rysuje nowa glowe
-        lcdRectangle(head->x, head->y, head->x+ELSIZE-1, head->y+ELSIZE-1, 1, fgCOLOR);
-			}
+		if(result == 1) {
+            while(iter->next != NULL)
+                iter = iter->next;
+            lcdRectangle(iter->x, iter->y, iter->x+ELSIZE-1, iter->y+ELSIZE-1, 1, bgCOLOR);
+            while(iter->prev != head) {
+                iter->x = iter->prev->x;
+                iter->y = iter->prev->y;
+                iter = iter->prev;
+            }
+            iter->x = copy.x;
+            iter->y = copy.y;
+            //rysuje nowa glowe
+            lcdRectangle(head->x, head->y, head->x+ELSIZE-1, head->y+ELSIZE-1, 1, fgCOLOR);
+		}
         oldControl = inputControl;
         switch(oldControl) {
             case 1:
